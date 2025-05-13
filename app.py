@@ -874,14 +874,14 @@ elif page == "Regression Modeling":
                 # Calculate metrics
                 r2 = r2_score(y, y_pred)
                 
-                # Display results in a simple card
+                # Display results in a simple card with changed background color
                 st.markdown(
                     f"""
-                    <div style="background-color: #f0f8ff; padding: 15px; border-radius: 10px; margin: 20px 0;">
-                        <h3 style="margin-top: 0;">Model Performance</h3>
-                        <p><strong>R² Score:</strong> {r2:.4f}</p>
-                        <p><strong>Coefficients:</strong> {', '.join([f"{pred}: {coef:.4f}" for pred, coef in zip(selected_predictors, model.coef_)])}</p>
-                        <p><strong>Intercept:</strong> {model.intercept_:.4f}</p>
+                    <div style="background-color: #e8f4f8; padding: 15px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #4682B4;">
+                        <h3 style="margin-top: 0; color: #2C3E50;">Model Performance</h3>
+                        <p style="color: #000000"><strong>R² Score:</strong> {r2:.4f}</p>
+                        <p style="color: #000000"><strong>Coefficients:</strong> {', '.join([f"{pred}: {coef:.4f}" for pred, coef in zip(selected_predictors, model.coef_)])}</p>
+                        <p style="color: #000000"><strong>Intercept:</strong> {model.intercept_:.4f}</p>
                     </div>
                     """, 
                     unsafe_allow_html=True
@@ -950,57 +950,6 @@ elif page == "Regression Modeling":
                         yaxis_title=target_var,
                         template='plotly_white',
                         height=500
-                    )
-                    
-                    st.plotly_chart(fig, use_container_width=True)
-                else:
-                    # For multiple predictors, show feature importance
-                    st.subheader("Feature Importance")
-                    importance_df = pd.DataFrame({
-                        'Feature': selected_predictors,
-                        'Coefficient': model.coef_,
-                        'Absolute Importance': np.abs(model.coef_)
-                    }).sort_values('Absolute Importance', ascending=False)
-                    
-                    fig = px.bar(
-                        importance_df,
-                        x='Feature',
-                        y='Coefficient',
-                        title='Regression Coefficients',
-                        color='Coefficient',
-                        color_continuous_scale='RdBu_r'
-                    )
-                    
-                    fig.update_layout(
-                        xaxis_title='Feature',
-                        yaxis_title='Coefficient Value',
-                        template='plotly_white',
-                        height=400
-                    )
-                    
-                    # Add reference line at y=0
-                    fig.add_hline(y=0, line_dash="solid", line_color="gray")
-                    
-                    st.plotly_chart(fig, use_container_width=True)
-                    
-                    # Show relationship for the most important feature
-                    most_important_feature = importance_df.iloc[0]['Feature']
-                    st.subheader(f"Relationship: {most_important_feature} vs {target_var}")
-                    
-                    fig = px.scatter(
-                        model_data,
-                        x=most_important_feature,
-                        y=target_var,
-                        opacity=0.7,
-                        trendline='ols',
-                        title=f'Partial Relationship: {target_var} vs {most_important_feature}'
-                    )
-                    
-                    fig.update_layout(
-                        xaxis_title=most_important_feature,
-                        yaxis_title=target_var,
-                        template='plotly_white',
-                        height=400
                     )
                     
                     st.plotly_chart(fig, use_container_width=True)
