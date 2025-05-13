@@ -21,12 +21,13 @@ The `app.py` module is the main application file for the Spotify Track Analysis 
 ## Application Structure
 
 The app is organized into several pages, accessible through a sidebar navigation menu:
-1. **Data Overview**: Displays basic information about the dataset
-2. **Descriptive Statistics**: Shows statistical measures for selected features
-3. **Feature Distributions**: Analyzes distributions of individual features
-4. **Correlation Analysis**: Examines relationships between features
-5. **Regression Modeling**: Builds and evaluates linear regression models
-6. **About**: Provides information about the project
+1. **Home**: Welcome page with app overview and quick insights
+2. **Data Overview**: Displays basic information about the dataset
+3. **Descriptive Statistics**: Shows statistical measures for selected features
+4. **Feature Distributions**: Analyzes distributions of individual features
+5. **Correlation Analysis**: Examines relationships between features
+6. **Regression Modeling**: Builds and evaluates linear regression models
+7. **About**: Provides information about the project
 
 ## Page Configuration and Styling
 
@@ -92,7 +93,7 @@ This section loads the Spotify dataset using the `load_spotify_data` function fr
 st.sidebar.title("Navigation")
 page = st.sidebar.radio(
     "Select a page:",
-    ["Data Overview", "Descriptive Statistics", "Feature Distributions", 
+    ["Home", "Data Overview", "Descriptive Statistics", "Feature Distributions", 
      "Correlation Analysis", "Regression Modeling", "About"]
 )
 
@@ -104,6 +105,21 @@ categorical_features = get_categorical_features(df)
 The navigation system uses a radio button widget in the sidebar to switch between different pages of the application. The code also extracts numerical and categorical features from the dataset for use throughout the app.
 
 ## Key Pages and Features
+
+### Home Page
+
+This welcome page provides:
+- Introduction to the app's purpose and capabilities
+- Key statistics about the dataset (number of tracks, features, average popularity)
+- Quick visualizations showing sample insights from the data
+- Feature cards highlighting the different analysis sections available
+- Call-to-action encouraging users to explore the app
+
+**Key components**:
+- Responsive layout with columns for organization
+- Styled cards with visual hierarchy
+- Sample visualizations to showcase data insights
+- Clear navigation guidance for new users
 
 ### Data Overview Page
 
@@ -244,4 +260,4 @@ To run the application:
 1. Ensure all dependencies are installed: `pip install streamlit pandas numpy matplotlib seaborn plotly scipy scikit-learn statsmodels`
 2. Make sure the dataset file 'spotify_tracks.csv' is available in the project directory
 3. Run the app from the command line: `streamlit run app.py`
-4. The app will open in your default web browser
+4. The app will open in your default web browser and display the Home page
