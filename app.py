@@ -1,19 +1,19 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-import plotly.express as px
-import plotly.graph_objects as go
-from scipy import stats  # Added import for stats module
-from data_loader import load_spotify_data, get_numerical_features, get_categorical_features
+import streamlit as st          # Web app framework for creating interactive data applications
+import pandas as pd             # Data manipulation and analysis library for tabular data structures
+import numpy as np              # Scientific computing library for numerical operations and array handling
+import matplotlib.pyplot as plt  # Plotting library for creating static, interactive, and animated visualizations
+import seaborn as sns           # Statistical data visualization library based on matplotlib
+import plotly.express as px     # High-level interface for interactive plotly visualizations
+import plotly.graph_objects as go  # Low-level interface for creating custom interactive plots
+from scipy import stats         # Statistical functions and tests from SciPy
+from data_loader import load_spotify_data, get_numerical_features, get_categorical_features  # Custom data loading functions
 from data_analysis import (generate_descriptive_stats, create_correlation_heatmap,
                          create_distribution_plot, build_regression_model,
-                         create_scatter_plot)
-from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.preprocessing import StandardScaler
+                         create_scatter_plot)  # Custom data analysis functions
+from sklearn.linear_model import LinearRegression  # Linear regression models from scikit-learn
+from sklearn.model_selection import train_test_split  # Utilities for splitting datasets for training/testing
+from sklearn.metrics import mean_squared_error, r2_score  # Evaluation metrics for regression models
+from sklearn.preprocessing import StandardScaler  # Feature scaling for preprocessing data
 
 # Page configuration
 st.set_page_config(

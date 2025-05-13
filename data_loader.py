@@ -1,6 +1,6 @@
-import pandas as pd
-import numpy as np
-import os
+import pandas as pd  # Data manipulation and analysis library for tabular data structures
+import numpy as np   # Scientific computing library for numerical operations and array handling
+import os            # Operating system interface for file/directory operations
 
 def load_spotify_data(filepath='spotify_tracks.csv'):
     """

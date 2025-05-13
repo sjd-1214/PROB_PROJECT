@@ -1,15 +1,15 @@
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-import plotly.express as px
-import plotly.graph_objects as go
-from scipy import stats
-from sklearn.linear_model import LinearRegression
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, r2_score
-import statsmodels.api as sm
+import pandas as pd             # Data manipulation and analysis library for tabular data structures
+import numpy as np              # Scientific computing library for numerical operations and array handling
+import matplotlib.pyplot as plt  # Plotting library for creating static, interactive, and animated visualizations
+import seaborn as sns           # Statistical data visualization library based on matplotlib
+import plotly.express as px     # High-level interface for interactive plotly visualizations
+import plotly.graph_objects as go  # Low-level interface for creating custom interactive plots
+from scipy import stats         # Statistical functions and tests from SciPy
+from sklearn.linear_model import LinearRegression  # Linear regression models from scikit-learn
+from sklearn.ensemble import RandomForestRegressor  # Random forest regression from scikit-learn
+from sklearn.model_selection import train_test_split  # Utilities for splitting datasets for training/testing
+from sklearn.metrics import mean_squared_error, r2_score  # Evaluation metrics for regression models
+import statsmodels.api as sm    # Statistical models for regression, time series, and more
 
 def generate_descriptive_stats(df, features):
     """

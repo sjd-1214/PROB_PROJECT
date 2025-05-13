@@ -1,11 +1,11 @@
-import matplotlib.pyplot as plt
-import seaborn as sns
-import plotly.express as px
-import plotly.graph_objects as go
-import pandas as pd
-import numpy as np
-from scipy import stats
-import streamlit as st
+import matplotlib.pyplot as plt  # Plotting library for creating static, interactive, and animated visualizations
+import seaborn as sns           # Statistical data visualization library based on matplotlib
+import plotly.express as px     # High-level interface for interactive plotly visualizations
+import plotly.graph_objects as go  # Low-level interface for creating custom interactive plots
+import pandas as pd             # Data manipulation and analysis library for tabular data structures
+import numpy as np              # Scientific computing library for numerical operations and array handling
+from scipy import stats         # Statistical functions and tests from SciPy
+import streamlit as st          # Web app framework for creating interactive data applications
 
 # Set style for matplotlib plots
 plt.style.use('seaborn-v0_8-whitegrid')
