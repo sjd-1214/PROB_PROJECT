@@ -1,9 +1,15 @@
-streamlit==1.25.0
-pandas==2.0.3
-numpy==1.24.3
-matplotlib==3.7.2
-seaborn==0.12.2
-scikit-learn==1.3.0
-statsmodels==0.14.0
-plotly==5.15.0
-scipy==1.11.1
+streamlit>=1.25.0
+pandas>=2.0.3
+numpy>=1.24.3
+matplotlib>=3.7.2
+seaborn>=0.12.2
+scikit-learn>=1.3.0
+statsmodels>=0.14.0
+plotly>=5.15.0
+scipy>=1.11.1
+# Add additional dependencies for improved functionality
+ipykernel>=6.0.0      # For Jupyter notebook integration
+openpyxl>=3.0.0       # For Excel file support
+xlrd>=2.0.0           # For legacy Excel file support
+pillow>=9.0.0         # For image processing capabilities
+joblib>=1.0.0         # For model persistence

@@ -851,9 +851,6 @@ elif page == "Regression Modeling":
         default=[f for f in numerical_features[:3] if f != target_var]
     )
     
-    # Train/test split ratio
-    test_size = st.slider("Test data percentage:", 10, 50, 20) / 100
-    
     if target_var and selected_predictors:
         # Button to trigger model building
         if st.button("Build Linear Regression Model"):
@@ -867,94 +864,146 @@ elif page == "Regression Modeling":
                 X = model_data[selected_predictors]
                 y = model_data[target_var]
                 
-                # Split data
-                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
-                
                 # Create and fit linear regression model
                 model = LinearRegression()
-                model.fit(X_train, y_train)
+                model.fit(X, y)
                 
                 # Make predictions
-                y_train_pred = model.predict(X_train)
-                y_test_pred = model.predict(X_test)
+                y_pred = model.predict(X)
                 
                 # Calculate metrics
-                train_r2 = r2_score(y_train, y_train_pred)
-                test_r2 = r2_score(y_test, y_test_pred)
+                r2 = r2_score(y, y_pred)
                 
-                # Display results in a simple table
-                st.subheader("Model Results")
-                
-                results_df = pd.DataFrame({
-                    'Metric': ['R² Score (Training)', 'R² Score (Testing)'],
-                    'Value': [f"{train_r2:.4f}", f"{test_r2:.4f}"]
-                })
-                
-                st.table(results_df)
-                
-                # Show feature coefficients
-                st.subheader("Feature Coefficients")
-                
-                coef_df = pd.DataFrame({
-                    'Feature': selected_predictors,
-                    'Coefficient': model.coef_
-                })
-                
-                coef_df['Absolute Value'] = coef_df['Coefficient'].abs()
-                coef_df = coef_df.sort_values('Absolute Value', ascending=False).drop('Absolute Value', axis=1)
-                
-                st.table(coef_df)
-                
-                # Prediction tool
-                st.subheader("Prediction Tool")
-                st.write("Adjust values to predict the target variable:")
-                
-                # Create columns based on the number of predictors
-                cols_per_row = 3
-                num_rows = (len(selected_predictors) + cols_per_row - 1) // cols_per_row
-                
-                input_values = {}
-                
-                for row in range(num_rows):
-                    cols = st.columns(cols_per_row)
-                    for col_idx in range(cols_per_row):
-                        feature_idx = row * cols_per_row + col_idx
-                        if feature_idx < len(selected_predictors):
-                            feature = selected_predictors[feature_idx]
-                            with cols[col_idx]:
-                                # Get feature statistics for slider defaults
-                                feature_min = float(df[feature].min())
-                                feature_max = float(df[feature].max())
-                                feature_mean = float(df[feature].mean())
-                                
-                                # Calculate appropriate step size
-                                step = (feature_max - feature_min) / 100
-                                if step == 0:
-                                    step = 0.01
-                                
-                                # Create slider
-                                input_values[feature] = st.slider(
-                                    f"{feature}:",
-                                    min_value=feature_min,
-                                    max_value=feature_max,
-                                    value=feature_mean,
-                                    step=step
-                                )
-                
-                # Make prediction
-                input_df = pd.DataFrame([input_values])
-                prediction = model.predict(input_df)[0]
-                
-                # Display prediction with better styling
+                # Display results in a simple card
                 st.markdown(
                     f"""
-                    <div style="background-color: #f0f8ff; padding: 20px; border-radius: 10px; margin-top: 20px; text-align: center;">
-                        <h3 style="margin-top: 0;">Predicted {target_var}:</h3>
-                        <p style="font-size: 24px; font-weight: bold; color: #1DB954;">{prediction:.4f}</p>
+                    <div style="background-color: #f0f8ff; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                        <h3 style="margin-top: 0;">Model Performance</h3>
+                        <p><strong>R² Score:</strong> {r2:.4f}</p>
+                        <p><strong>Coefficients:</strong> {', '.join([f"{pred}: {coef:.4f}" for pred, coef in zip(selected_predictors, model.coef_)])}</p>
+                        <p><strong>Intercept:</strong> {model.intercept_:.4f}</p>
                     </div>
                     """, 
                     unsafe_allow_html=True
                 )
+                
+                # Create scatter plot for regression visualization
+                st.subheader("Regression Model: Actual vs Predicted Values")
+                pred_df = pd.DataFrame({
+                    'Actual': y,
+                    'Predicted': y_pred
+                })
+                
+                # If dataset is large, sample for better visualization
+                if len(pred_df) > 500:
+                    pred_df = pred_df.sample(500, random_state=42)
+                
+                # Create actual vs predicted plot
+                fig = px.scatter(
+                    pred_df, 
+                    x='Actual', 
+                    y='Predicted',
+                    opacity=0.7,
+                    title=f'Linear Regression: Actual vs Predicted {target_var}'
+                )
+                
+                # Add diagonal reference line (perfect predictions)
+                min_val = min(pred_df['Actual'].min(), pred_df['Predicted'].min())
+                max_val = max(pred_df['Actual'].max(), pred_df['Predicted'].max())
+                fig.add_trace(
+                    go.Scatter(
+                        x=[min_val, max_val],
+                        y=[min_val, max_val],
+                        mode='lines',
+                        line=dict(dash='dash', color='red', width=2),
+                        name='Perfect Prediction'
+                    )
+                )
+                
+                # Update layout
+                fig.update_layout(
+                    xaxis_title=f'Actual {target_var}',
+                    yaxis_title=f'Predicted {target_var}',
+                    template='plotly_white',
+                    height=500
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # If we have exactly one predictor, show a simple regression line plot
+                if len(selected_predictors) == 1:
+                    predictor = selected_predictors[0]
+                    st.subheader(f"Simple Linear Regression: {target_var} = {model.coef_[0]:.4f} × {predictor} + {model.intercept_:.4f}")
+                    
+                    # Create regression line plot
+                    fig = px.scatter(
+                        model_data,
+                        x=predictor,
+                        y=target_var,
+                        opacity=0.7,
+                        trendline='ols',
+                        title=f'Linear Regression Line: {target_var} vs {predictor}'
+                    )
+                    
+                    fig.update_layout(
+                        xaxis_title=predictor,
+                        yaxis_title=target_var,
+                        template='plotly_white',
+                        height=500
+                    )
+                    
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    # For multiple predictors, show feature importance
+                    st.subheader("Feature Importance")
+                    importance_df = pd.DataFrame({
+                        'Feature': selected_predictors,
+                        'Coefficient': model.coef_,
+                        'Absolute Importance': np.abs(model.coef_)
+                    }).sort_values('Absolute Importance', ascending=False)
+                    
+                    fig = px.bar(
+                        importance_df,
+                        x='Feature',
+                        y='Coefficient',
+                        title='Regression Coefficients',
+                        color='Coefficient',
+                        color_continuous_scale='RdBu_r'
+                    )
+                    
+                    fig.update_layout(
+                        xaxis_title='Feature',
+                        yaxis_title='Coefficient Value',
+                        template='plotly_white',
+                        height=400
+                    )
+                    
+                    # Add reference line at y=0
+                    fig.add_hline(y=0, line_dash="solid", line_color="gray")
+                    
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                    # Show relationship for the most important feature
+                    most_important_feature = importance_df.iloc[0]['Feature']
+                    st.subheader(f"Relationship: {most_important_feature} vs {target_var}")
+                    
+                    fig = px.scatter(
+                        model_data,
+                        x=most_important_feature,
+                        y=target_var,
+                        opacity=0.7,
+                        trendline='ols',
+                        title=f'Partial Relationship: {target_var} vs {most_important_feature}'
+                    )
+                    
+                    fig.update_layout(
+                        xaxis_title=most_important_feature,
+                        yaxis_title=target_var,
+                        template='plotly_white',
+                        height=400
+                    )
+                    
+                    st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("Please select target and predictor variables for regression modeling.")
 
