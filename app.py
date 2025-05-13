@@ -64,7 +64,7 @@ except Exception as e:
 st.sidebar.title("Navigation")
 page = st.sidebar.radio(
     "Select a page:",
-    ["Data Overview", "Descriptive Statistics", "Feature Distributions", 
+    ["Home", "Data Overview", "Descriptive Statistics", "Feature Distributions", 
      "Correlation Analysis", "Regression Modeling", "About"]
 )
 
@@ -72,8 +72,145 @@ page = st.sidebar.radio(
 numerical_features = get_numerical_features(df)
 categorical_features = get_categorical_features(df)
 
+# Home Page (directly in app.py instead of redirecting)
+if page == "Home":
+    st.markdown("<h2 class='sub-header'>Welcome to Spotify Track Analysis</h2>", unsafe_allow_html=True)
+    
+    # Introduction section
+    st.markdown("""
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <h3 style="color: #1DB954;">Discover Insights in Music Data</h3>
+        <p style=" color: #000000">
+            Welcome to the Spotify Track Analysis App! This tool allows you to explore and analyze 
+            audio features of Spotify tracks using statistical methods and visualizations.
+        </p>
+        <p style=" color: #000000">
+            Use the navigation menu on the left to explore different analysis sections.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Stats overview
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        <div style="text-align: center; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
+            <h2 style="color: #1DB954;">{}</h2>
+            <p style=" color: #000000">Tracks Analyzed</p>
+        </div>
+        """.format(df.shape[0]), unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div style="text-align: center; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
+            <h2 style="color: #1DB954;">{}</h2>
+            <p style=" color: #000000">Audio Features</p>
+        </div>
+        """.format(len(numerical_features)), unsafe_allow_html=True)
+    
+    with col3:
+        avg_popularity = round(df['popularity'].mean(), 1) if 'popularity' in df.columns else "N/A"
+        st.markdown("""
+        <div style="text-align: center; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
+            <h2 style="color: #1DB954;">{}</h2>
+            <p style=" color: #000000">Average Popularity</p>
+        </div>
+        """.format(avg_popularity), unsafe_allow_html=True)
+    
+    # Quick visualizations section
+    st.subheader("Quick Insights")
+    
+    # Create two columns for visualizations
+    viz_col1, viz_col2 = st.columns(2)
+    
+    with viz_col1:
+        # Display a feature distribution if data available
+        if numerical_features and len(numerical_features) > 0:
+            default_feature = 'popularity' if 'popularity' in numerical_features else numerical_features[0]
+            fig = px.histogram(
+                df, 
+                x=default_feature,
+                title=f'Distribution of {default_feature}',
+                color_discrete_sequence=['#1DB954']
+            )
+            fig.update_layout(height=300)
+            st.plotly_chart(fig, use_container_width=True)
+    
+    with viz_col2:
+        # Display correlation between two popular features if available
+        if len(numerical_features) >= 2:
+            feature_x = 'danceability' if 'danceability' in numerical_features else numerical_features[0]
+            feature_y = 'energy' if 'energy' in numerical_features else numerical_features[1]
+            
+            fig = px.scatter(
+                df.sample(min(1000, len(df))), 
+                x=feature_x, 
+                y=feature_y,
+                title=f'{feature_y} vs. {feature_x}',
+                color_discrete_sequence=['#1DB954']
+            )
+            fig.update_layout(height=300)
+            st.plotly_chart(fig, use_container_width=True)
+    
+    # Feature cards section - what you can do with the app
+    st.subheader("Explore The App")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("""
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid #1DB954;">
+            <h4 style="color: #1DB954;">📊 Data Overview</h4>
+            <p style=" color: #000000">Explore the Spotify dataset structure, feature descriptions, and basic statistics.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid #1DB954;">
+            <h4 style="color: #1DB954;">📉 Feature Distributions</h4>
+            <p style=" color: #000000">Analyze probability distributions of audio features with histograms and density plots.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid #1DB954;">
+            <h4 style="color: #1DB954;">📊 Regression Modeling</h4>
+            <p style=" color: #000000">Build predictive models to understand what audio features influence track popularity.</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid #1DB954;">
+            <h4 style="color: #1DB954;">📈 Descriptive Statistics</h4>
+            <p style=" color: #000000">Dive into detailed statistical measures for each feature with confidence intervals.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid #1DB954;">
+            <h4 style="color: #1DB954;">🔄 Correlation Analysis</h4>
+            <p style=" color: #000000">Discover relationships between audio features through correlation heatmaps and scatter plots.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid #1DB954;">
+            <h4 style="color: #1DB954;">ℹ️ About</h4>
+            <p style=" color: #000000">Learn more about the project, data sources, and statistical methods used.</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Get started CTA
+    st.markdown("""
+    <div style="text-align: center; margin-top: 30px; margin-bottom: 30px;">
+        <p style="font-size: 1.2rem; margin-bottom: 20px;">Ready to explore the data?</p>
+        <p>Select a page from the navigation menu on the left to get started!</p>
+    </div>
+    """, unsafe_allow_html=True)
+
 # Data Overview Page
-if page == "Data Overview":
+elif page == "Data Overview":
     st.markdown("<h2 class='sub-header'>Data Overview</h2>", unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
