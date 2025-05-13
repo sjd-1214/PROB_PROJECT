@@ -841,373 +841,98 @@ elif page == "Regression Modeling":
         index=numerical_features.index('popularity') if 'popularity' in numerical_features else 0
     )
     
-    # Enhanced predictor variable selection with categorization
+    # Simplified predictor variable selection
     st.subheader("Select Variables for Prediction")
     
-    # Create categories of features to make selection more intuitive
-    feature_categories = {
-        "Audio Features": [f for f in numerical_features if f in 
-                          ["acousticness", "danceability", "energy", "instrumentalness", 
-                           "liveness", "loudness", "speechiness", "tempo", "valence"]],
-        "Popularity & Metrics": [f for f in numerical_features if f in 
-                               ["popularity", "duration_ms", "key", "mode", "time_signature"]]
-    }
+    # Allow multi-selection of predictors
+    selected_predictors = st.multiselect(
+        "Select predictor variables:",
+        options=[f for f in numerical_features if f != target_var],
+        default=[f for f in numerical_features[:3] if f != target_var]
+    )
     
-    # Add "Other" category for any features not in the defined categories
-    other_features = [f for f in numerical_features if not any(f in category for category in feature_categories.values())]
-    if other_features and other_features != [target_var]:
-        feature_categories["Other"] = other_features
-    
-    # Remove target variable from all categories
-    for category in feature_categories:
-        if target_var in feature_categories[category]:
-            feature_categories[category].remove(target_var)
-    
-    # Allow user to select by category
-    selected_predictors = []
-    
-    # Create expanders for each category
-    for category, features in feature_categories.items():
-        if features:  # Only show categories with features
-            with st.expander(f"{category} ({len(features)} features)", expanded=True if category == "Audio Features" else False):
-                # Add select all option
-                if len(features) > 1:
-                    select_all = st.checkbox(f"Select all {category.lower()}", key=f"select_all_{category}")
-                    if select_all:
-                        category_selection = features
-                    else:
-                        # Default to selecting first 2 features in each category
-                        default_selection = features[:2] if len(features) > 2 else features
-                        category_selection = st.multiselect(
-                            "Choose features:",
-                            options=features,
-                            default=default_selection
-                        )
-                else:
-                    category_selection = st.multiselect(
-                        "Choose features:",
-                        options=features,
-                        default=features
-                    )
-                
-                selected_predictors.extend(category_selection)
-    
-    # Make sure we have at least one predictor
-    if not selected_predictors:
-        st.warning("Please select at least one predictor variable")
-        # Auto-select the first available predictor if none selected
-        if any(features for features in feature_categories.values()):
-            for category, features in feature_categories.items():
-                if features:
-                    selected_predictors = [features[0]]
-                    st.info(f"Auto-selected {features[0]} as predictor")
-                    break
-    
-    # Visual train/test split selector
-    st.subheader("Model Configuration")
-    
-    col1, col2 = st.columns([3, 2])
-    
-    with col1:
-        # Visual train-test split selector
-        st.write("Train/Test Split:")
-        test_percentage = st.select_slider(
-            "Test data percentage",
-            options=[10, 15, 20, 25, 30, 40, 50],
-            value=20,
-            format_func=lambda x: f"{x}%"
-        )
-        test_size = test_percentage / 100
-        
-        # Visual representation of the split
-        split_col1, split_col2 = st.columns([100-test_percentage, test_percentage])
-        with split_col1:
-            st.markdown(
-                f"""
-                <div style="background-color: #1DB954; padding: 10px; border-radius: 5px 0 0 5px; text-align: center; color: white;">
-                    <strong>Training: {100-test_percentage}%</strong>
-                </div>
-                """, 
-                unsafe_allow_html=True
-            )
-        with split_col2:
-            st.markdown(
-                f"""
-                <div style="background-color: #FF6B6B; padding: 10px; border-radius: 0 5px 5px 0; text-align: center; color: white;">
-                    <strong>Testing: {test_percentage}%</strong>
-                </div>
-                """, 
-                unsafe_allow_html=True
-            )
-    
-    with col2:
-        # Add option for model type (advanced)
-        st.write("Additional Settings:")
-        model_method = st.radio(
-            "Regression Method:",
-            options=["Linear Regression", "Advanced: Ridge Regression"],
-            index=0
-        )
-        
-        if model_method == "Advanced: Ridge Regression":
-            alpha = st.slider("Regularization strength (alpha):", 0.01, 10.0, 1.0, 0.01)
-    
-    # Add option to limit dataset size for performance
-    use_sample = st.checkbox("Use data sample for faster processing", value=True)
-    if use_sample:
-        sample_size = st.slider(
-            "Sample size (% of data):",
-            min_value=10,
-            max_value=100,
-            value=50,
-            step=10
-        )
+    # Train/test split ratio
+    test_size = st.slider("Test data percentage:", 10, 50, 20) / 100
     
     if target_var and selected_predictors:
         # Button to trigger model building
         if st.button("Build Linear Regression Model"):
-            try:
-                # Show progress
-                progress_bar = st.progress(0)
-                status_text = st.empty()
+            # Get data for modeling
+            model_data = df[selected_predictors + [target_var]].dropna()
+            
+            if len(model_data) < 10:
+                st.error("Not enough data points after removing missing values. Please select different features.")
+            else:
+                # Split features and target
+                X = model_data[selected_predictors]
+                y = model_data[target_var]
                 
-                status_text.text("Preparing data...")
-                progress_bar.progress(10)
+                # Split data
+                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
                 
-                # Get data for modeling
-                model_data = df[selected_predictors + [target_var]].dropna()
+                # Create and fit linear regression model
+                model = LinearRegression()
+                model.fit(X_train, y_train)
                 
-                # Use sample if selected
-                if use_sample and sample_size < 100:
-                    sample_n = int(len(model_data) * (sample_size / 100))
-                    if sample_n > 1000:  # If still large, cap at 1000
-                        sample_n = 1000
-                    model_data = model_data.sample(sample_n, random_state=42)
+                # Make predictions
+                y_train_pred = model.predict(X_train)
+                y_test_pred = model.predict(X_test)
                 
-                progress_bar.progress(20)
+                # Calculate metrics
+                train_r2 = r2_score(y_train, y_train_pred)
+                test_r2 = r2_score(y_test, y_test_pred)
                 
-                if len(model_data) < 10:
-                    st.error("Not enough data points after removing missing values. Please select different features.")
-                    progress_bar.empty()
-                    status_text.empty()
-                else:
-                    # Split features and target
-                    status_text.text("Splitting data...")
-                    X = model_data[selected_predictors]
-                    y = model_data[target_var]
-                    
-                    # Check for infinite or very large values
-                    if X.isin([np.inf, -np.inf]).any().any() or (X.abs() > 1e10).any().any():
-                        st.warning("Data contains extreme values that might cause performance issues. Consider different features.")
-                        # Clean the data
-                        X = X.replace([np.inf, -np.inf], np.nan).dropna()
-                        y = y.loc[X.index]
-                    
-                    progress_bar.progress(30)
-                    
-                    # Split data
-                    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
-                    
-                    # Create linear regression model
-                    status_text.text("Training model...")
-                    progress_bar.progress(40)
-                    
-                    model = LinearRegression()
-                    
-                    # Fit model with timeout protection
-                    try:
-                        with st.spinner("Fitting model..."):
-                            model.fit(X_train, y_train)
-                        progress_bar.progress(60)
-                    except Exception as e:
-                        st.error(f"Error during model training: {e}")
-                        progress_bar.empty()
-                        status_text.empty()
-                        st.stop()
-                    
-                    # Make predictions
-                    status_text.text("Making predictions...")
-                    y_train_pred = model.predict(X_train)
-                    y_test_pred = model.predict(X_test)
-                    progress_bar.progress(70)
-                    
-                    # Calculate metrics
-                    status_text.text("Calculating performance metrics...")
-                    train_mse = mean_squared_error(y_train, y_train_pred)
-                    test_mse = mean_squared_error(y_test, y_test_pred)
-                    train_r2 = r2_score(y_train, y_train_pred)
-                    test_r2 = r2_score(y_test, y_test_pred)
-                    progress_bar.progress(80)
-                    
-                    # Calculate residuals
-                    train_residuals = y_train - y_train_pred
-                    test_residuals = y_test - y_test_pred
-                    progress_bar.progress(90)
-                    
-                    # Complete progress
-                    status_text.text("Rendering results...")
-                    progress_bar.progress(100)
-                    
-                    # Clear progress indicators
-                    progress_bar.empty()
-                    status_text.empty()
-                    
-                    # Display a success message
-                    st.success("Model built successfully!")
-                    
-                    # Display results with improved visuals
-                    st.subheader("Model Results")
-                    
-                    # Create metrics cards with better styling
-                    metrics_cols = st.columns(2)
-                    
-                    with metrics_cols[0]:
-                        st.markdown(
-                            f"""
-                            <div style="background-color: #f0f8ff; padding: 20px; border-radius: 10px; border-left: 5px solid #1DB954;">
-                                <h3 style="color: #1DB954; margin-top: 0;">Training Performance</h3>
-                                <p><strong>R² Score:</strong> {train_r2:.4f}</p>
-                                <p><strong>RMSE:</strong> {np.sqrt(train_mse):.4f}</p>
-                                <p><strong>MSE:</strong> {train_mse:.4f}</p>
-                            </div>
-                            """, 
-                            unsafe_allow_html=True
-                        )
-                    
-                    with metrics_cols[1]:
-                        st.markdown(
-                            f"""
-                            <div style="background-color: #fff0f5; padding: 20px; border-radius: 10px; border-left: 5px solid #FF6B6B;">
-                                <h3 style="color: #FF6B6B; margin-top: 0;">Testing Performance</h3>
-                                <p><strong>R² Score:</strong> {test_r2:.4f}</p>
-                                <p><strong>RMSE:</strong> {np.sqrt(test_mse):.4f}</p>
-                                <p><strong>MSE:</strong> {test_mse:.4f}</p>
-                            </div>
-                            """, 
-                            unsafe_allow_html=True
-                        )
-                    
-                    # Rest of the visualization code - optimize each section
-                    
-                    # Model interpretation - simpler initial display
-                    st.subheader("Model Interpretation")
-                    interp_color = "#1DB954" if test_r2 >= 0.7 else "#FFA500" if test_r2 >= 0.3 else "#FF6B6B"
-                    interp_text = "strong" if test_r2 >= 0.7 else "moderate" if test_r2 >= 0.3 else "poor"
-                    
-                    st.markdown(
-                        f"""
-                        <div style="background-color: #f9f9f9; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-                            <p>The linear regression model has <span style="color: {interp_color}; font-weight: bold;">{interp_text}</span> predictive power.</p>
-                            <p>It explains <span style="font-weight: bold;">{test_r2*100:.1f}%</span> of the variance in {target_var} on the test data.</p>
-                        </div>
-                        """, 
-                        unsafe_allow_html=True
-                    )
-                    
-                    # Use tabs for detailed visualizations with lazy loading
-                    model_tabs = st.tabs(["📊 Predictions", "📉 Residuals", "🔍 Feature Importance"])
-                    
-                    with model_tabs[0]:
-                        # Create more efficient visualizations with limited data points
-                        st.subheader("Actual vs Predicted Values")
-                        
-                        # Limit data points for visualization if dataset is large
-                        max_viz_points = 1000
-                        if len(y_train) > max_viz_points:
-                            # Sample data for visualization
-                            train_indices = np.random.choice(len(y_train), max_viz_points // 2, replace=False)
-                            train_results = pd.DataFrame({
-                                'Actual': y_train.iloc[train_indices],
-                                'Predicted': y_train_pred[train_indices],
-                                'Dataset': 'Training'
-                            })
-                        else:
-                            train_results = pd.DataFrame({
-                                'Actual': y_train,
-                                'Predicted': y_train_pred,
-                                'Dataset': 'Training'
-                            })
-                        
-                        if len(y_test) > max_viz_points:
-                            test_indices = np.random.choice(len(y_test), max_viz_points // 2, replace=False)
-                            test_results = pd.DataFrame({
-                                'Actual': y_test.iloc[test_indices],
-                                'Predicted': y_test_pred[test_indices],
-                                'Dataset': 'Testing'
-                            })
-                        else:
-                            test_results = pd.DataFrame({
-                                'Actual': y_test,
-                                'Predicted': y_test_pred,
-                                'Dataset': 'Testing'
-                            })
-                        
-                        all_results = pd.concat([train_results, test_results])
-                        
-                        # Create scatter plot with limited data
-                        fig = px.scatter(
-                            all_results,
-                            x='Actual',
-                            y='Predicted',
-                            color='Dataset',
-                            title='Actual vs Predicted Values',
-                            color_discrete_map={'Training': '#1DB954', 'Testing': '#FF6B6B'},
-                            opacity=0.7
-                        )
-                        
-                        # Add diagonal line for perfect predictions
-                        min_val = min(all_results['Actual'].min(), all_results['Predicted'].min())
-                        max_val = max(all_results['Actual'].max(), all_results['Predicted'].max())
-                        fig.add_trace(
-                            go.Scatter(
-                                x=[min_val, max_val],
-                                y=[min_val, max_val],
-                                mode='lines',
-                                line=dict(dash='dash', color='#333333', width=2),
-                                name='Perfect Prediction'
-                            )
-                        )
-                        
-                        # Simplified layout
-                        fig.update_layout(
-                            height=500,
-                            margin=dict(t=50, b=50),
-                            plot_bgcolor='white'
-                        )
-                        
-                        st.plotly_chart(fig, use_container_width=True)
-                    
-                    # ... Other tabs would be similarly optimized ...
-                    
-                    # Streamlined prediction tool
-                    st.markdown("""
-                    <div style="background-color: #e6f7ff; padding: 15px; border-radius: 10px; margin-top: 20px;">
-                        <h3 style="color: #1DB954; margin-top: 0;">Prediction Tool</h3>
-                        <p>Adjust values to predict the target variable.</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # More efficient input layout
-                    input_values = {}
-                    
-                    # Create columns dynamically based on number of features
-                    num_cols = min(3, len(selected_predictors))
-                    cols = st.columns(num_cols)
-                    
-                    for i, feature in enumerate(selected_predictors):
-                        col_idx = i % num_cols
-                        with cols[col_idx]:
-                            # Get min/max/mean with error handling
-                            try:
+                # Display results in a simple table
+                st.subheader("Model Results")
+                
+                results_df = pd.DataFrame({
+                    'Metric': ['R² Score (Training)', 'R² Score (Testing)'],
+                    'Value': [f"{train_r2:.4f}", f"{test_r2:.4f}"]
+                })
+                
+                st.table(results_df)
+                
+                # Show feature coefficients
+                st.subheader("Feature Coefficients")
+                
+                coef_df = pd.DataFrame({
+                    'Feature': selected_predictors,
+                    'Coefficient': model.coef_
+                })
+                
+                coef_df['Absolute Value'] = coef_df['Coefficient'].abs()
+                coef_df = coef_df.sort_values('Absolute Value', ascending=False).drop('Absolute Value', axis=1)
+                
+                st.table(coef_df)
+                
+                # Prediction tool
+                st.subheader("Prediction Tool")
+                st.write("Adjust values to predict the target variable:")
+                
+                # Create columns based on the number of predictors
+                cols_per_row = 3
+                num_rows = (len(selected_predictors) + cols_per_row - 1) // cols_per_row
+                
+                input_values = {}
+                
+                for row in range(num_rows):
+                    cols = st.columns(cols_per_row)
+                    for col_idx in range(cols_per_row):
+                        feature_idx = row * cols_per_row + col_idx
+                        if feature_idx < len(selected_predictors):
+                            feature = selected_predictors[feature_idx]
+                            with cols[col_idx]:
+                                # Get feature statistics for slider defaults
                                 feature_min = float(df[feature].min())
                                 feature_max = float(df[feature].max())
                                 feature_mean = float(df[feature].mean())
                                 
-                                # Ensure proper step size
+                                # Calculate appropriate step size
                                 step = (feature_max - feature_min) / 100
                                 if step == 0:
                                     step = 0.01
                                 
+                                # Create slider
                                 input_values[feature] = st.slider(
                                     f"{feature}:",
                                     min_value=feature_min,
@@ -1215,22 +940,21 @@ elif page == "Regression Modeling":
                                     value=feature_mean,
                                     step=step
                                 )
-                            except Exception:
-                                # Fallback for problematic features
-                                input_values[feature] = st.number_input(f"{feature}:", value=0.0)
-                    
-                    # Make prediction with simple display
-                    try:
-                        input_df = pd.DataFrame([input_values])
-                        prediction = model.predict(input_df)[0]
-                        
-                        st.markdown(f"### Predicted {target_var}: {prediction:.4f}")
-                    except Exception as e:
-                        st.error(f"Error making prediction: {e}")
-            
-            except Exception as e:
-                st.error(f"An error occurred: {e}")
-                st.info("Try using fewer features or a smaller dataset sample.")
+                
+                # Make prediction
+                input_df = pd.DataFrame([input_values])
+                prediction = model.predict(input_df)[0]
+                
+                # Display prediction with better styling
+                st.markdown(
+                    f"""
+                    <div style="background-color: #f0f8ff; padding: 20px; border-radius: 10px; margin-top: 20px; text-align: center;">
+                        <h3 style="margin-top: 0;">Predicted {target_var}:</h3>
+                        <p style="font-size: 24px; font-weight: bold; color: #1DB954;">{prediction:.4f}</p>
+                    </div>
+                    """, 
+                    unsafe_allow_html=True
+                )
     else:
         st.info("Please select target and predictor variables for regression modeling.")
 
